@@ -1,9 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { db } from "@/lib/firebase"
+import { collection, addDoc, deleteDoc, doc, onSnapshot } from "firebase/firestore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +15,7 @@ import { Trash2, Plus, ImageIcon } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface Game {
-  id: number
+  id: string
   title: string
   image: string
   description: string
@@ -24,54 +25,13 @@ interface Game {
 
 export default function AdminPage() {
   const router = useRouter()
-
-  // Initial games data
-  const initialGames: Game[] = [
-    {
-      id: 1,
-      title: "League of Legends",
-      image: "/images/game-lol.jpg",
-      description:
-        "Compete in 5v5 team battles in this strategic MOBA game. Show off your skills and climb the ranks in our League of Legends tournaments.",
-      players: "5v5",
-      prize: "$10,000",
-    },
-    {
-      id: 2,
-      title: "Counter-Strike 2",
-      image: "/images/game-cs2.jpg",
-      description:
-        "Test your aim and tactical prowess in this premier first-person shooter. Join our CS2 tournaments and prove you're the best.",
-      players: "5v5",
-      prize: "$15,000",
-    },
-    {
-      id: 3,
-      title: "Valorant",
-      image: "/images/game-valorant.jpg",
-      description:
-        "Combine precise gunplay with unique agent abilities in this tactical shooter. Our Valorant tournaments offer intense competition.",
-      players: "5v5",
-      prize: "$12,000",
-    },
-    {
-      id: 4,
-      title: "Dota 2",
-      image: "/images/game-dota2.jpg",
-      description:
-        "Master the complexity of this legendary MOBA. Our Dota 2 tournaments feature the highest level of strategic gameplay.",
-      players: "5v5",
-      prize: "$20,000",
-    },
-  ]
-
-  const [games, setGames] = useState<Game[]>(initialGames)
+  const [games, setGames] = useState<Game[]>([])
   const [newGame, setNewGame] = useState({
     title: "",
     image: "",
     description: "",
-    players: "5v5", // Default value
-    prize: "$5,000", // Default value
+    players: "5v5",
+    prize: "$5,000",
   })
   const [errors, setErrors] = useState({
     title: "",
@@ -83,121 +43,81 @@ export default function AdminPage() {
 
   // Check authentication on component mount
   useEffect(() => {
-    const checkAuth = () => {
-      const adminAuth = localStorage.getItem("adminAuthenticated")
-      if (adminAuth !== "true") {
-        router.push("/admin/login")
-      } else {
-        setIsAuthenticated(true)
-      }
+    const adminAuth = localStorage.getItem("adminAuthenticated")
+    if (adminAuth !== "true") {
+      router.push("/admin/login")
+    } else {
+      setIsAuthenticated(true)
     }
-
-    checkAuth()
   }, [router])
 
-  // Load games from localStorage on component mount
+  // Real-time Firestore listener
   useEffect(() => {
-    if (isAuthenticated) {
-      try {
-        const savedGames = localStorage.getItem("esportsGames")
-        if (savedGames) {
-          setGames(JSON.parse(savedGames))
-        } else {
-          // If no saved games, initialize with default games and save to localStorage
-          localStorage.setItem("esportsGames", JSON.stringify(initialGames))
-        }
-      } catch (error) {
-        console.error("Error loading games from localStorage:", error)
-      }
-    }
+    if (!isAuthenticated) return
+    const unsubscribe = onSnapshot(collection(db, "games"), (snapshot) => {
+      const gamesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Game[]
+      setGames(gamesData)
+    })
+    return () => unsubscribe()
   }, [isAuthenticated])
 
   const validateForm = () => {
     let valid = true
-    const newErrors = {
-      title: "",
-      image: "",
-      description: "",
-    }
-
+    const newErrors = { title: "", image: "", description: "" }
     if (!newGame.title.trim()) {
       newErrors.title = "Game name is required"
       valid = false
     }
-
     if (!newGame.image.trim()) {
       newErrors.image = "Image URL is required"
       valid = false
     }
-
     if (!newGame.description.trim()) {
       newErrors.description = "Game description is required"
       valid = false
     }
-
     setErrors(newErrors)
     return valid
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setNewGame({
-      ...newGame,
-      [name]: value,
-    })
-
-    // Clear error when user types
+    setNewGame({ ...newGame, [name]: value })
     if (errors[name as keyof typeof errors]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      })
+      setErrors({ ...errors, [name]: "" })
     }
   }
 
-  const handleAddGame = () => {
+  const handleAddGame = async () => {
     if (validateForm()) {
-      const newId = games.length > 0 ? Math.max(...games.map((game) => game.id)) + 1 : 1
-
-      const gameToAdd: Game = {
-        id: newId,
-        title: newGame.title,
-        image: newGame.image,
-        description: newGame.description,
-        players: newGame.players,
-        prize: newGame.prize,
+      try {
+        await addDoc(collection(db, "games"), newGame)
+        setNewGame({
+          title: "",
+          image: "",
+          description: "",
+          players: "5v5",
+          prize: "$5,000",
+        })
+        setSuccessMessage("Game added successfully!")
+        setTimeout(() => setSuccessMessage(""), 3000)
+      } catch (error) {
+        console.error("Error adding game:", error)
       }
-
-      const updatedGames = [...games, gameToAdd]
-      setGames(updatedGames)
-
-      // Save updated games to localStorage
-      localStorage.setItem("esportsGames", JSON.stringify(updatedGames))
-
-      // Reset form
-      setNewGame({
-        title: "",
-        image: "",
-        description: "",
-        players: "5v5",
-        prize: "$5,000",
-      })
-
-      // Show success message
-      setSuccessMessage("Game added successfully!")
-      setTimeout(() => setSuccessMessage(""), 3000)
     }
   }
 
-  const handleRemoveGame = (id: number) => {
-    const updatedGames = games.filter((game) => game.id !== id)
-    setGames(updatedGames)
-
-    // Save updated games to localStorage
-    localStorage.setItem("esportsGames", JSON.stringify(updatedGames))
-
-    setSuccessMessage("Game removed successfully!")
-    setTimeout(() => setSuccessMessage(""), 3000)
+  const handleRemoveGame = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "games", id))
+      setSuccessMessage("Game removed successfully!")
+      setTimeout(() => setSuccessMessage(""), 3000)
+    } catch (error) {
+      console.error("Error removing game:", error)
+    }
   }
 
   const handleLogout = () => {
@@ -205,10 +125,7 @@ export default function AdminPage() {
     router.push("/admin/login")
   }
 
-  // If not authenticated, show nothing (will redirect in useEffect)
-  if (!isAuthenticated) {
-    return null
-  }
+  if (!isAuthenticated) return null
 
   return (
     <div className="min-h-screen bg-black text-white">

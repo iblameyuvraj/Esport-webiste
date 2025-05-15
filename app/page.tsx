@@ -7,16 +7,15 @@ export default function HomePage() {
     <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
       <section className="relative h-[80vh] flex items-center overflow-hidden">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center"
-          style={{
-            backgroundImage: "url('/cta.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent"></div>
-        </div>
+        <video
+          className="absolute inset-0 z-0 w-full h-full object-cover"
+          src="/freefire.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent"></div>
 
         <div className="container mx-auto px-4 z-10">
           <div className="max-w-3xl">
