@@ -16,6 +16,18 @@ This is an esports website designed to provide an immersive experience for gamer
 
 ---
 
+## Dependencies
+
+The following dependencies are used in this project:
+
+- **React**: For building the user interface.
+- **Next.js**: For server-side rendering and routing.
+- **Tailwind CSS**: For styling and responsive design.
+- **Lucide React**: For icons.
+- **@/components/ui/button**: Custom button component.
+
+---
+
 ## How to Run the Website
 
 ### Prerequisites
@@ -32,3 +44,25 @@ Make sure you have the following installed:
    ```bash
    git clone https://github.com/iblameyuvraj/Esport-webiste.git
    cd Esport-webiste
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+   Or, if you're using Yarn:
+   ```bash
+   yarn install
+   ```
+
+3. **Start the Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Or, with Yarn:
+   ```bash
+   yarn dev
+   ```
+
+4. **Open in Browser**:
+   Visit [http://localhost:3000](http://localhost:3000) in your browser to view the website.
