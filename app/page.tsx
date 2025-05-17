@@ -9,7 +9,8 @@ export default function HomePage() {
       <section className="relative h-[80vh] flex items-center overflow-hidden">
         <video
           className="absolute inset-0 z-0 w-full h-full object-cover"
-          src="/freefire.mp4"
+          // src="/freefire.mp4"
+          src="https://files.catbox.moe/mngdsz.mp4"
           autoPlay
           loop
           muted

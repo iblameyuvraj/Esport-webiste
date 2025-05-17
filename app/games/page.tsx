@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronRight } from "lucide-react"
+import { db } from "@/lib/firebase"
+import { collection, onSnapshot } from "firebase/firestore"
 
 interface Game {
   id: string
@@ -27,25 +29,19 @@ export default function GamesPage() {
   const [gamesList, setGamesList] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Fetch games from the admin panel API
   useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const response = await fetch("/api/games") // Replace with your API endpoint
-        if (response.ok) {
-          const data = await response.json()
-          setGamesList(data)
-        } else {
-          console.error("Failed to fetch games")
-        }
-      } catch (error) {
-        console.error("Error fetching games:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
+    // Set up Firestore real-time listener
+    const unsubscribe = onSnapshot(collection(db, "games"), (snapshot) => {
+      const gamesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Game[]
+      setGamesList(gamesData)
+      setLoading(false)
+    })
 
-    fetchGames()
+    // Cleanup listener on component unmount
+    return () => unsubscribe()
   }, [])
 
   return (
